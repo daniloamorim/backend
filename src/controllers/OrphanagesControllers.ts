@@ -7,13 +7,18 @@ import { getRepository} from 'typeorm';
 //import da minha classe criada no models
 import Orphanage from '../models/Orphanages';
 
+import orphanageView from '../views/orphanages_view';
+import * as Yup from 'yup';
+
 export default {
     async index(request: Request, response: Response) {
         const orphanagesRepository = getRepository(Orphanage);
 
-        const orphanages = await orphanagesRepository.find();
+        const orphanages = await orphanagesRepository.find( { 
+            relations: ['images']
+        } );
 
-        return response.json(orphanages);
+        return response.json(orphanageView.renderMany(orphanages));
     },
 
     async show(request: Request, response: Response) {
@@ -21,9 +26,11 @@ export default {
 
         const orphanagesRepository = getRepository(Orphanage);
 
-        const orphanage = await orphanagesRepository.findOneOrFail( id );
-
-        return response.json(orphanage);
+        const orphanages = await orphanagesRepository.findOneOrFail( id, {
+            relations: ['images']
+        } );
+        //a partir de agora quem determina o que vai aparecer ou não são as views
+        return response.json(orphanageView.render(orphanages));
     },
 
     async create(request: Request, response: Response) {
@@ -38,16 +45,45 @@ export default {
         } = request.body;
     
         const orphanagesRepository = getRepository(Orphanage);
+
+        const requestImages = request.files as Express.Multer.File[];
+       
+       //aqui fica o nome do arquivo que foi salvo em disco
+        const images = requestImages.map(image => {
+            return { path: image.filename}
+        })
     
-        const orphanage = orphanagesRepository.create ({
+        const data = {
             name,
             latitude,
             longitude,
             about,
             instructions,
             opening_hours,
-            open_on_weekends,     
-        } as any);
+            open_on_weekends,
+            images,
+        } ;
+
+        const schema = Yup.object().shape({
+            name: Yup.string().required( 'Nome Obrigatório'),
+            latitude: Yup.number().required(),
+            longitude: Yup.number().required(),
+            about: Yup.string().required().max(300),
+            instructions: Yup.string().required(),
+            opening_hours: Yup.string().required(),
+            open_on_weekends: Yup.boolean().required(),
+            image: Yup.array(
+                Yup.object().shape({
+                    path: Yup.string().required()
+            }))
+
+        });
+
+        await schema.validate(data, {
+            abortEarly: false,
+        });
+
+        const orphanage = orphanagesRepository.create (data);
     
         //para usar o await preciso que a função seja async
         await orphanagesRepository.save(orphanage);

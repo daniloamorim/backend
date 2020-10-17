@@ -3,7 +3,7 @@ import {MigrationInterface, QueryRunner, Table} from "typeorm";
 export class createOrphanages1602642917146 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        //  REALIZA R ALTERAÇÕES
+        //  REALIZAR  ALTERAÇÕES
         //  CRIAR TABELA, CRIAR UM NOVO CAMPO, DELETAR ALGUM CAMPO
         await queryRunner.createTable(new Table({
             name: 'orphanages',
@@ -18,7 +18,7 @@ export class createOrphanages1602642917146 implements MigrationInterface {
                 },
                 {
                     name: 'name',
-                    type: 'varchar'
+                    type: 'varchar',
                 },
                 {
                     name: 'latitude',
